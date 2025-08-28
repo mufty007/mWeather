@@ -22,4 +22,13 @@
     <color name="rainy">#42A5F5</color>
     <color name="snowy">#E1F5FE</color>
     <color name="stormy">#455A64</color>
+    
+    <!-- Weather Card Colors -->
+    <color name="weather_card_background">#E3F2FD</color>
+    <color name="weather_text_primary">#1565C0</color>
+    <color name="weather_text_secondary">#42A5F5</color>
+    <color name="weather_text_label">#757575</color>
+    <color name="weather_text_shadow">#40000000</color>
+    <color name="weather_divider">#E0E0E0</color>
+    <color name="details_background">#F5F5F5</color>
 </resources>

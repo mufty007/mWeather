@@ -29,31 +29,26 @@ class DailyForecastAdapter : ListAdapter<ForecastDay, DailyForecastAdapter.Daily
     class DailyForecastViewHolder(private val binding: ItemForecastBinding) : RecyclerView.ViewHolder(binding.root) {
         
         private val dateFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+        private val apiDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
         fun bind(item: ForecastDay) {
             val date = Date(item.dateEpoch * 1000)
+            val todayString = apiDateFormat.format(Calendar.getInstance().time)
             
             binding.apply {
-                tvDate.text = if (isToday(date)) "Today" else dateFormat.format(date)
+                tvDate.text = if (item.date == todayString) "Today" else dateFormat.format(date)
                 tvTime.text = "" // No time for daily forecast
                 tvDescription.text = item.day.condition.text
-                tvTemp.text = "${item.day.maxTempC.toInt()}°/${item.day.minTempC.toInt()}°C"
-                tvFeelsLike.text = "Avg ${item.day.avgTempC.toInt()}°C"
+                tvTemp.text = "${item.day.maxTempC.toInt()}°/${item.day.minTempC.toInt()}°"
+                tvFeelsLike.text = "Avg ${item.day.avgTempC.toInt()}°"
                 tvHumidity.text = "💧 ${item.day.avgHumidity.toInt()}%"
-                tvWind.text = "💨 ${String.format("%.1f", item.day.maxWindKph / 3.6)} m/s" // Convert to m/s
+                tvWind.text = "💨 ${String.format("%.1f", item.day.maxWindKph / 3.6)} m/s"
 
                 val iconUrl = "https:${item.day.condition.icon}"
                 Glide.with(itemView.context)
                     .load(iconUrl)
                     .into(ivWeatherIcon)
             }
-        }
-
-        private fun isToday(date: Date): Boolean {
-            val today = Calendar.getInstance()
-            val itemDate = Calendar.getInstance().apply { time = date }
-            return today.get(Calendar.YEAR) == itemDate.get(Calendar.YEAR) &&
-                   today.get(Calendar.DAY_OF_YEAR) == itemDate.get(Calendar.DAY_OF_YEAR)
         }
     }
 

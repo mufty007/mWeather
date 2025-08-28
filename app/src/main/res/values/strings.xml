@@ -9,9 +9,12 @@
     <!-- Weather -->
     <string name="temperature_celsius">%1$d°C</string>
     <string name="temperature_format">%1$.0f°</string>
-    <string name="humidity_format">%1$d%%</string>
+    <string name="humidity_format">Humidity %1$d%%</string>
     <string name="wind_speed_format">%1$.1f m/s</string>
     <string name="pressure_format">%1$d hPa</string>
+    <string name="location_format">%1$s, %2$s</string>
+    <string name="feels_like_format">Feels like %1$.0f°C</string>
+    <string name="percentage_format">%1$d%%</string>
     
     <!-- Location -->
     <string name="location_permission_required">Location permission is required to get weather data</string>

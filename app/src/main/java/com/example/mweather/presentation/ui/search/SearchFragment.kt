@@ -1,190 +1,135 @@
 package com.example.mweather.presentation.ui.search
 
 import android.os.Bundle
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
+import android.widget.*
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
-import androidx.navigation.fragment.findNavController
+import androidx.lifecycle.lifecycleScope
 import com.example.mweather.R
-import com.example.mweather.databinding.FragmentSearchBinding
-import com.example.mweather.presentation.ui.main.MainViewModel
-import com.example.mweather.presentation.ui.forecast.ForecastViewModel
+import com.example.mweather.data.api.Resource
+import com.example.mweather.domain.usecases.GetCurrentWeatherUseCase
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class SearchFragment : Fragment() {
 
-    init {
-        android.util.Log.d("SearchFragment", "SearchFragment instance created")
-    }
+    @Inject
+    lateinit var getCurrentWeatherUseCase: GetCurrentWeatherUseCase
 
-    private var _binding: FragmentSearchBinding? = null
-    private val binding get() = _binding!!
-
-    private val viewModel: SearchViewModel by viewModels()
-    private val mainViewModel: MainViewModel by activityViewModels()
-    private val forecastViewModel: ForecastViewModel by activityViewModels()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        try {
-            android.util.Log.d("SearchFragment", "onCreate called")
-            super.onCreate(savedInstanceState)
-            
-            // Test ViewModel initialization
-            android.util.Log.d("SearchFragment", "Testing ViewModel initialization...")
-            android.util.Log.d("SearchFragment", "SearchViewModel: ${viewModel::class.simpleName}")
-            android.util.Log.d("SearchFragment", "MainViewModel: ${mainViewModel::class.simpleName}")
-            android.util.Log.d("SearchFragment", "ForecastViewModel: ${forecastViewModel::class.simpleName}")
-            android.util.Log.d("SearchFragment", "All ViewModels initialized successfully")
-            
-        } catch (e: Exception) {
-            android.util.Log.e("SearchFragment", "Error in onCreate or ViewModel initialization", e)
-        }
-    }
+    private lateinit var btnSearch: Button
+    private lateinit var etSearch: EditText
+    private lateinit var progressBar: ProgressBar
+    private lateinit var tvError: TextView
+    private lateinit var layoutResult: LinearLayout
+    private lateinit var tvLocation: TextView
+    private lateinit var tvTemperature: TextView
+    private lateinit var tvCondition: TextView
+    private lateinit var tvFeelsLike: TextView
+    private lateinit var tvHumidity: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View {
-        try {
-            android.util.Log.d("SearchFragment", "onCreateView called")
-            _binding = FragmentSearchBinding.inflate(inflater, container, false)
-            android.util.Log.d("SearchFragment", "Binding inflated successfully")
-            return binding.root
-        } catch (e: Exception) {
-            android.util.Log.e("SearchFragment", "Error in onCreateView", e)
-            throw e
-        }
+    ): View? {
+        return inflater.inflate(R.layout.fragment_search, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        try {
-            android.util.Log.d("SearchFragment", "onViewCreated called")
-            super.onViewCreated(view, savedInstanceState)
-            setupSearchInput()
-            setupSearchButton()
-            android.util.Log.d("SearchFragment", "SearchFragment setup completed")
-        } catch (e: Exception) {
-            android.util.Log.e("SearchFragment", "Error in onViewCreated", e)
-        }
+        super.onViewCreated(view, savedInstanceState)
+        initViews(view)
+        setupSearch()
     }
 
-    private fun setupSearchInput() {
-        try {
-            android.util.Log.d("SearchFragment", "Setting up search input")
-            binding.etSearch.setOnEditorActionListener { _, actionId, event ->
-                android.util.Log.d("SearchFragment", "Search input action triggered")
-                if (actionId == EditorInfo.IME_ACTION_SEARCH || 
-                    (event?.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    performSearch()
-                    true
-                } else {
-                    false
-                }
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("SearchFragment", "Error setting up search input", e)
-        }
+    private fun initViews(view: View) {
+        btnSearch = view.findViewById(R.id.btn_search)
+        etSearch = view.findViewById(R.id.et_search)
+        progressBar = view.findViewById(R.id.progress_bar)
+        tvError = view.findViewById(R.id.tv_error)
+        layoutResult = view.findViewById(R.id.layout_result)
+        tvLocation = view.findViewById(R.id.tv_location)
+        tvTemperature = view.findViewById(R.id.tv_temperature)
+        tvCondition = view.findViewById(R.id.tv_condition)
+        tvFeelsLike = view.findViewById(R.id.tv_feels_like)
+        tvHumidity = view.findViewById(R.id.tv_humidity)
     }
 
-    private fun setupSearchButton() {
-        try {
-            android.util.Log.d("SearchFragment", "Setting up search button")
-            binding.btnSearch.setOnClickListener {
-                android.util.Log.d("SearchFragment", "Search button clicked")
-                performSearch()
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("SearchFragment", "Error setting up search button", e)
-        }
-    }
-
-    private fun performSearch() {
-        try {
-            // Null check for binding
-            if (_binding == null) {
-                return
-            }
-            
-            val query = binding.etSearch.text?.toString()?.trim()
-            
-            // Hide any previous error
-            binding.tvError.visibility = View.GONE
+    private fun setupSearch() {
+        btnSearch.setOnClickListener {
+            val query = etSearch.text?.toString()?.trim()
             
             if (query.isNullOrBlank()) {
-                showError("Please enter a location name")
-                return
+                showError("Please enter a city name")
+                return@setOnClickListener
             }
             
             if (query.length < 2) {
                 showError("Please enter at least 2 characters")
-                return
+                return@setOnClickListener
             }
             
-            // Additional safety checks
-            if (!isAdded || isDetached || activity == null) {
-                return
-            }
-            
-            // Log the search attempt
-            android.util.Log.d("SearchFragment", "Attempting to search for: $query")
-            
-            // Update view models with additional safety
-            try {
-                mainViewModel.getWeatherByCity(query)
-            } catch (e: Exception) {
-                android.util.Log.e("SearchFragment", "Error updating main view model", e)
-                showError("Failed to update weather data")
-                return
-            }
-            
-            try {
-                forecastViewModel.getForecastByCity(query)
-            } catch (e: Exception) {
-                android.util.Log.e("SearchFragment", "Error updating forecast view model", e)
-                // Don't return here - main weather might still work
-            }
-            
-            // Clear search input
-            try {
-                binding.etSearch.text?.clear()
-            } catch (e: Exception) {
-                android.util.Log.e("SearchFragment", "Error clearing search text", e)
-            }
-            
-            // Navigate back to home with additional safety checks
-            try {
-                if (isAdded && !isDetached && activity != null && _binding != null) {
-                    findNavController().navigate(R.id.navigation_home)
-                    android.util.Log.d("SearchFragment", "Navigation successful")
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("SearchFragment", "Navigation error", e)
-                showError("Search completed but navigation failed")
-            }
-            
-        } catch (e: Exception) {
-            // Catch-all error handler
-            android.util.Log.e("SearchFragment", "Unexpected error in performSearch", e)
-            showError("An unexpected error occurred")
-        }
-    }
-    
-    private fun showError(message: String) {
-        if (_binding != null) {
-            binding.tvError.text = message
-            binding.tvError.visibility = View.VISIBLE
+            searchWeather(query)
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    private fun searchWeather(query: String) {
+        lifecycleScope.launch {
+            try {
+                showLoading(true)
+                hideError()
+                hideResult()
+                
+                getCurrentWeatherUseCase(query).collect { resource ->
+                    when (resource) {
+                        is Resource.Loading -> {
+                            showLoading(true)
+                        }
+                        is Resource.Success -> {
+                            showLoading(false)
+                            showWeatherResult(resource.data)
+                        }
+                        is Resource.Error -> {
+                            showLoading(false)
+                            showError(resource.message)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                showLoading(false)
+                showError("Search failed: ${e.message}")
+            }
+        }
+    }
+
+    private fun showWeatherResult(weather: com.example.mweather.data.models.CurrentWeatherResponse) {
+        tvLocation.text = "${weather.location.name}, ${weather.location.country}"
+        tvTemperature.text = "${weather.current.tempC.toInt()}°C"
+        tvCondition.text = weather.current.condition.text
+        tvFeelsLike.text = "Feels like ${weather.current.feelslikeC.toInt()}°C"
+        tvHumidity.text = "Humidity ${weather.current.humidity}%"
+        
+        layoutResult.visibility = View.VISIBLE
+    }
+
+    private fun showLoading(show: Boolean) {
+        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+        btnSearch.isEnabled = !show
+    }
+
+    private fun showError(message: String) {
+        tvError.text = message
+        tvError.visibility = View.VISIBLE
+    }
+
+    private fun hideError() {
+        tvError.visibility = View.GONE
+    }
+
+    private fun hideResult() {
+        layoutResult.visibility = View.GONE
     }
 }

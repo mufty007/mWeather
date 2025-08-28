@@ -123,19 +123,19 @@ class MainFragment : Fragment() {
     private fun showLoading(show: Boolean) {
         binding.swipeRefresh.isRefreshing = show
         if (show) {
-            binding.progressBar.show()
+            binding.loadingLayout.show()
         } else {
-            binding.progressBar.hide()
+            binding.loadingLayout.hide()
         }
     }
 
     private fun showError(message: String) {
         binding.tvError.text = message
-        binding.tvError.show()
+        binding.errorLayout.show()
     }
 
     private fun hideError() {
-        binding.tvError.hide()
+        binding.errorLayout.hide()
     }
 
     override fun onDestroyView() {
